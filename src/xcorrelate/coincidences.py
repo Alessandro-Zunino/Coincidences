@@ -22,6 +22,14 @@ def load_streams(filename):
     return a_noduplicated, b_noduplicated
 
 
+def filter_afterpulsing(stream, threshold=10):
+
+    time_diff = np.diff(stream)
+    idx = np.argwhere(time_diff > threshold)
+
+    return stream[idx + 1].flatten()
+
+
 def atime_2_trace(stream, dt, coarsening=100000, units='flux'):
     t0 = stream.copy() - stream[0]
     c = int(coarsening)
