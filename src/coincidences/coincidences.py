@@ -67,21 +67,28 @@ def plot_ttrace(time, ttrace, time_step, flux_range=None):
     return fig, ax
 
 
-def g_2(stream_1, stream_2, dt, delay_range, coarsening=1, normalize=True):
+def g_2(stream_1, stream_2, dt, delay_range, coarsening=1, normalize = True, processor = 'gpu'):
     """
-    Calculate correlation between two photon streams with arrival times t0 and t1
-    Inspired by Wahl et al., Opt. Expr. 11 (26), 2003
+    Calculate correlation between two photon arrival time streams equally sampled in time.
+    Inspired by Laurence, T. A., Fore, S., Huser, T. (2006). Fast, flexible algorithm for calculating photon
+    correlations. Optics Letters , 31 (6), 829–831. https://doi.org/10.1364/OL.31.000829
 
     Parameters
     ----------
-    t0 : np.array()
+    stream_1 : np.array()
         Vector with arrival times channel 1 [a.u.].
-    t1 : np.array()
+    stream_2 : np.array()
         Vector with arrival times channel 2 [a.u.]..
-    macroTime : float
+    dt : float
         Multiplication factor for the arrival times vectors [s].
-    t_range : float or string, optional
+    delay_range : float or string, optional
         Maximum tau value for which to calculate the correlation
+    coarsening : int
+        binning factor to use for the correlation histogram
+    normalize : bool
+        If true, the correlation is normalized
+    processor : str
+        If 'gpu', the processing is parallelized on CUDA cores.
 
     Returns
     -------
@@ -90,7 +97,10 @@ def g_2(stream_1, stream_2, dt, delay_range, coarsening=1, normalize=True):
 
     """
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    if processor == 'gpu' and torch.cuda.is_available():
+        device = torch.device("cuda:0")
+    else:
+        device = torch.device("cpu")
 
     offset = np.min((stream_1[0], stream_2[0]))
 
