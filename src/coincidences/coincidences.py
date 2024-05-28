@@ -22,7 +22,7 @@ def load_streams(filename):
     return a_noduplicated, b_noduplicated
 
 
-def atime_2_trace(stream, dt, coarsening=100000):
+def atime_2_trace(stream, dt, coarsening=100000, units='flux'):
     t0 = stream.copy() - stream[0]
     c = int(coarsening)
 
@@ -37,7 +37,8 @@ def atime_2_trace(stream, dt, coarsening=100000):
 
     time = np.arange(ttrace.size) * time_step
 
-    ttrace = ttrace / time_step
+    if units == 'flux':
+        ttrace = ttrace / time_step
 
     return time, ttrace
 
