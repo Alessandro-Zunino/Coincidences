@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import trange
-from collections.abc import Iterable
+from collections.abc import Sequence
 import torch
 import gc
 
@@ -61,7 +61,7 @@ def plot_ttrace(time, ttrace, time_step, flux_range=None):
 
     bins = np.arange(flux_range[0], flux_range[1], binsize)
 
-    fig, ax = plt.subplots(1, 2, figsize=(15, 5), sharey=True)
+    fig, ax = plt.subplots(1, 2, figsize=(15, 5), sharey='all')
 
     ax[0].plot(time, ttrace)
     ax[0].set_ylabel('Flux (Hz)')
@@ -86,18 +86,19 @@ def g_2(stream_1, stream_2, dt, delay_range, coarsening=1, normalize=True, proce
 
     Parameters
     ----------
-    stream_1 : np.array()
-        Vector with arrival times channel 1 [a.u.].
-    stream_2 : np.array()
-        Vector with arrival times channel 2 [a.u.].
+    stream_1 : np.ndarray()
+        Vector with arrival times channel 1.
+    stream_2 : np.ndarray()
+        Vector with arrival times channel 2.
     dt : float
         Multiplication factor for the arrival times vectors [s].
-    delay_range : float or string, optional
-        Maximum tau value for which to calculate the correlation
+    delay_range : int or np.ndarray()
+        Maximum tau value for which to calculate the correlation.
+        It can also be an array of int values, where to calculate the correlation.
     coarsening : int
-        binning factor to use for the correlation histogram
+        Binning factor to use for the correlation histogram.
     normalize : bool
-        If true, the correlation is normalized
+        If true, the correlation is normalized.
     processor : str
         If 'gpu', the processing is parallelized on CUDA cores.
 
@@ -129,21 +130,21 @@ def g_2(stream_1, stream_2, dt, delay_range, coarsening=1, normalize=True, proce
         w1 = torch.ones_like(t1)
         t_range = delay_range
 
-    if isinstance(t_range, Iterable):
+    if isinstance(t_range, Sequence):
         t_bottom, t_top = t_range[0], t_range[1]
     else:
         t_bottom, t_top = -t_range, t_range
 
-    tau = torch.arange(t_bottom, t_top + 1, dtype=int)
+    tau = torch.arange(t_bottom, t_top + 1, dtype=torch.int64)
 
     # create array for g
 
-    N = len(tau)
-    g = torch.empty(N)
+    num = len(tau)
+    g = torch.empty(num)
 
     # calculate g for each tau value
 
-    for i in trange(N):
+    for i in trange(num):
         t = tau[i]
         g[i] = atimes_2_corr_single(t0, t1, w0, w1, t, t_max, coarsening, normalize)
 
@@ -176,6 +177,8 @@ def atimes_2_corr_single(t0, t1, w0, w1, tau, t_max, coarsening, normalize):
         Vector of weights for t0.
     w1 : np.ndarray()
         Vector of weights for t1.
+    coarsening : int
+        Binning factor to use for the correlation histogram.
     tau : np.array()
         tau value for which to calculate the correlation.
         [multiples of minimum coarsed macrotime].
@@ -195,17 +198,17 @@ def atimes_2_corr_single(t0, t1, w0, w1, tau, t_max, coarsening, normalize):
     t1 = t1 + tau
 
     # find intersection between t0 and t1
-    tauDouble, idx0, idx1 = torch_intersect1d(t0, t1, return_indices=True)
+    tau_double, idx0, idx1 = torch_intersect1d(t0, t1, return_indices=True)
 
     # calculate autocorrelation value
     g = (w0[idx0] * w1[idx1]).sum()
 
     # normalize g
     if normalize is True:
-        T = t_max - tau  # overlap time
-        I0 = torch.sum(w0[t0 >= tau])
-        I1 = torch.sum(w1[t1 <= t_max])
-        g = g * T / I0 / I1 / coarsening
+        overlap_time = t_max - tau
+        intensity_0 = torch.sum(w0[t0 >= tau])
+        intensity_1 = torch.sum(w1[t1 <= t_max])
+        g = g * overlap_time / intensity_0 / intensity_1 / coarsening
 
     return g
 
