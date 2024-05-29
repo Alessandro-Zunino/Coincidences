@@ -36,6 +36,8 @@ def atime_2_trace(stream, dt, coarsening=100000, units='flux'):
 
     if coarsening > 1:
         t0, w0 = np.unique(t0 // c, return_counts=True)
+    else:
+        w0 = np.ones_like(t0)
 
     ttrace = np.zeros(t0[-1] + 1)
 
@@ -76,7 +78,7 @@ def plot_ttrace(time, ttrace, time_step, flux_range=None):
     return fig, ax
 
 
-def g_2(stream_1, stream_2, dt, delay_range, coarsening=1, normalize = True, processor = 'gpu'):
+def g_2(stream_1, stream_2, dt, delay_range, coarsening=1, normalize=True, processor='gpu'):
     """
     Calculate correlation between two photon arrival time streams equally sampled in time.
     Inspired by Laurence, T. A., Fore, S., Huser, T. (2006). Fast, flexible algorithm for calculating photon
@@ -87,7 +89,7 @@ def g_2(stream_1, stream_2, dt, delay_range, coarsening=1, normalize = True, pro
     stream_1 : np.array()
         Vector with arrival times channel 1 [a.u.].
     stream_2 : np.array()
-        Vector with arrival times channel 2 [a.u.]..
+        Vector with arrival times channel 2 [a.u.].
     dt : float
         Multiplication factor for the arrival times vectors [s].
     delay_range : float or string, optional
@@ -164,15 +166,23 @@ def atimes_2_corr_single(t0, t1, w0, w1, tau, t_max, coarsening, normalize):
 
     Parameters
     ----------
-    t0 : np.array()
-        Vector with arrival times channel 1
+    t0 : np.ndarray()
+        Vector with arrival times channel 1.
         [multiples of minimum coarsed macrotime].
-    t1 : np.array()
-        Vector with arrival times channel 2
+    t1 : np.ndarray()
+        Vector with arrival times channel 2.
         [multiples of minimum coarsed macrotime].
+    w0 : np.ndarray()
+        Vector of weights for t0.
+    w1 : np.ndarray()
+        Vector of weights for t1.
     tau : np.array()
-        tau value for which to calculate the correlation
+        tau value for which to calculate the correlation.
         [multiples of minimum coarsed macrotime].
+    t_max : int
+        Index of the last photon arrival time event.
+    normalize : bool
+        If true, the correlation is normalized.
 
     Returns
     -------
@@ -191,7 +201,7 @@ def atimes_2_corr_single(t0, t1, w0, w1, tau, t_max, coarsening, normalize):
     g = (w0[idx0] * w1[idx1]).sum()
 
     # normalize g
-    if normalize == True:
+    if normalize is True:
         T = t_max - tau  # overlap time
         I0 = torch.sum(w0[t0 >= tau])
         I1 = torch.sum(w1[t1 <= t_max])
