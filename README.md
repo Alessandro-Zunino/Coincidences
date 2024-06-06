@@ -7,6 +7,6 @@ _Laurence, T. A., Fore, S., Huser, T. (2006). Fast, flexible algorithm for calcu
 
 ## Installation
 
-You can install `xcorrelate` via directly from GitHub:
+You can install `xcorrelate` directly from GitHub using pip:
 
     pip install git+https://github.com/Alessandro-Zunino/Coincidences
